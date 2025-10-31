@@ -13,9 +13,9 @@
     "lint": "next lint",
     "start": "next start"
   },
-  "description": "Next.js, Tailwind, @solana/web3.js, Wallet Adapter, Anchor Counter program",
+  "description": "Next.js, Tailwind, @solana/web3.js, Wallet Adapter, Anchor crud-app program",
   "keywords": [
-    "anchor-counter",
+    "anchor-crud-app",
     "nextjs",
     "react",
     "solana-web3js",

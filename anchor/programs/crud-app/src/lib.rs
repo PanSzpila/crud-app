@@ -5,7 +5,7 @@ use anchor_lang::prelude::*;
 declare_id!("Count3AcZucFDPSFBAeHkQ6AvttieKUkyJ8HiQGhQwe");
 
 #[program]
-pub mod counter {
+pub mod crud {
     use super::*;
 
     pub fn create_journal_entry(ctx: Context<CreateEntry>, title: String, message: String) -> Result<()> {
