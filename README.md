@@ -87,4 +87,4 @@ Build the web app
 pnpm build
 ```
 
-https://youtu.be/amAq-WHAFs8?si=5TyhH0l89e9Xc8JD&t=9285
+https://youtu.be/amAq-WHAFs8?si=6KHf539KmUstQs7_&t=10619

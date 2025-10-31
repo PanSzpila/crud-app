@@ -36,6 +36,14 @@ target/
 
 # Anchor artifacts
 .anchor/
+/anchor/.anchor
+/anchor/target/debug
+/anchor/target/deploy
+/anchor/target/release
+/anchor/target/sbf-solana-solana
+/anchor/target/test-ledger
+/anchor/target/.rustc_info.json
+/anchor/solana-release
 **/*.rs.bk
 
 # Solana validator / local config
@@ -53,4 +61,4 @@ config/
 *.pem
 *.log
 *.tmp
-*.swp
+*.swpanchor/solana-release*

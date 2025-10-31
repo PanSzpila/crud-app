@@ -13,17 +13,22 @@ pub mod counter {
         journal_entry.owner = *ctx.accounts.owner.key;
         journal_entry.title = title;
         journal_entry.message = message;
-    }
-
-    pub fn update_journal_entry(ctx: Context<UpdateEntry>, _title:String, message: String) -> Result<()> {
-        let journal_entry: &mut ctx.accounts.journal_entry;
-        journal_entry.message = message;
-
         Ok(())
     }
 
-    pub fn delete_journal_entry(ctx: Context<DeleteEntry>, message: String) -> Result<()> {
+    pub fn update_journal_entry(ctx: Context<UpdateEntry>, _title: String, message: String) -> Result<()> {
+        let journal_entry = &mut ctx.accounts.journal_entry;
 
+         let new_size = 8 + JournalEntryState::INIT_SPACE;
+         journal_entry
+        .to_account_info()
+        .resize(new_size)?;
+
+        journal_entry.message = message;
+        Ok(())
+    }
+
+    pub fn delete_journal_entry(ctx: Context<DeleteEntry>, _title: String) -> Result<()> {
         Ok(())
     }
 }
@@ -31,58 +36,53 @@ pub mod counter {
 #[derive(Accounts)]
 #[instruction(title: String)]
 pub struct CreateEntry<'info> {
-    #[account (
+    #[account(
         init,
         seeds = [title.as_bytes(), owner.key().as_ref()],
         bump,
         space = 8 + JournalEntryState::INIT_SPACE,
-        payer = owner,
+        payer = owner
     )]
     pub journal_entry: Account<'info, JournalEntryState>,
 
     #[account(mut)]
     pub owner: Signer<'info>,
 
-    pub system_program: Program<'info, System>
+    pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
+#[instruction(title: String)]
 pub struct UpdateEntry<'info> {
     #[account(
         mut,
         seeds = [title.as_bytes(), owner.key().as_ref()],
         bump,
-        realloc = 8 + JournalEntryState::INIT_SPACE, 
-        realloc::payer = owner,
-        realloc::zero = true,
     )]
     pub journal_entry: Account<'info, JournalEntryState>,
 
-        #[account(mut)]
+    #[account(mut)]
     pub owner: Signer<'info>,
 
-    pub system_program: Program<'info, System>
+    pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
 #[instruction(title: String)]
 pub struct DeleteEntry<'info> {
-        #[account (
-    mut,
+    #[account (
+        mut,
         seeds = [title.as_bytes(), owner.key().as_ref()],
         bump,
         close = owner,
-        )]
-            pub journal_entry: Account<'info, JournalEntryState>,
+    )]
+    pub journal_entry: Account<'info, JournalEntryState>,
 
-                #[account(mut)]
+    #[account(mut)]
     pub owner: Signer<'info>,
 
-    pub system_program: Program<'info, System>
-
-
+    pub system_program: Program<'info, System>,
 }
-
 
 #[account]
 #[derive(InitSpace)]
