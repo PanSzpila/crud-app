@@ -3,14 +3,14 @@
 import { useWallet } from '@solana/wallet-adapter-react'
 import { WalletButton } from '../solana/solana-provider'
 import { ExplorerLink } from '../cluster/cluster-ui'
-import { useCounterProgram } from './counter-data-access'
+import { useCrudProgram } from './counter-data-access'
 import { CounterCreate, CounterList } from './counter-ui'
 import { AppHero } from '../app-hero'
 import { ellipsify } from '@/lib/utils'
 
 export default function CounterFeature() {
   const { publicKey } = useWallet()
-  const { programId } = useCounterProgram()
+  const { programId } = useCrudProgram()
 
   return publicKey ? (
     <div>

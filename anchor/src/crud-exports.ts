@@ -1,7 +1,7 @@
 // Here we export some useful types and functions for interacting with the Anchor program.
 import { AnchorProvider, Program } from '@coral-xyz/anchor'
 import { Cluster, PublicKey } from '@solana/web3.js'
-import CrudIDL from '../target/idl/crud-app.json'
+import CrudIDL from '../target/idl/crud.json'
 import type { Crud } from '../target/types/crud-app'
 
 // Re-export the generated IDL and type
@@ -21,7 +21,7 @@ export function getCrudProgramId(cluster: Cluster) {
     case 'devnet':
     case 'testnet':
       // This is the program ID for the Crud program on devnet and testnet.
-      return new PublicKey('Count3AcZucFDPSFBAeHkQ6AvttieKUkyJ8HiQGhQwe')
+      return new PublicKey('4ABSuyEZT7W7fn5byRCVipJ1beECs2DWLquBpez7Msd7')
     case 'mainnet-beta':
     default:
       return COUNTER_PROGRAM_ID

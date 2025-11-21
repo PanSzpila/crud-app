@@ -2,7 +2,7 @@
 
 import { getCrudProgram, getCrudProgramId } from '@project/anchor'
 import { useConnection } from '@solana/wallet-adapter-react'
-import { Cluster, Keypair, PublicKey } from '@solana/web3.js'
+import { Cluster, PublicKey } from '@solana/web3.js'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { useCluster } from '../cluster/cluster-data-access'
@@ -11,10 +11,9 @@ import { useTransactionToast } from '../use-transaction-toast'
 import { toast } from 'sonner'
 
 interface CreateEntryArgs {
-  title: string;
-  message: string;
-  owner: PublicKey;
-
+  title: string
+  message: string
+  owner?: PublicKey
 }
 
 export function useCrudProgram() {
@@ -22,57 +21,81 @@ export function useCrudProgram() {
   const { cluster } = useCluster()
   const transactionToast = useTransactionToast()
   const provider = useAnchorProvider()
-  const programId = useMemo(() => getCrudProgramId(cluster.network as Cluster), [cluster])
+
+  const programId = useMemo(
+    () => getCrudProgramId(cluster.network as Cluster),
+    [cluster],
+  )
+
   const program = useMemo(() => getCrudProgram(provider, programId), [provider, programId])
 
   const accounts = useQuery({
     queryKey: ['journalEntry', 'all', { cluster }],
-    queryFn: () => program.account.journalEntryState.all(),
+    queryFn: async () => {
+      // zakładamy, że program.account.journalEntryState.all() zwraca Promise
+      return program.account.journalEntryState.all()
+    },
+    enabled: !!program,
   })
 
   const getProgramAccount = useQuery({
     queryKey: ['get-program-account', { cluster }],
-    queryFn: () => connection.getParsedAccountInfo(programId),
+    queryFn: async () => connection.getParsedAccountInfo(programId),
+    enabled: !!connection && !!programId,
   })
 
-  const createEntry = useMutation<string, Error, CreateEntryArgs> ({
-    mutationKey: [`journalEntry`, `create`, { cluster }],
-    mutationFn: async ({title, message, owner}) => {
-      return program.methods.createJournalEntry(title, message).rpc();
+  const createEntry = useMutation<string, Error, CreateEntryArgs>({
+    mutationKey: ['journalEntry', 'create', { cluster }],
+    mutationFn: async ({ title, message }) => {
+      return program.methods.createJournalEntry(title, message).rpc()
     },
-    onSuccess: (signature) {
-      transactionToast(signature);
-      accounts.refetch();
+    onSuccess: (signature) => {
+      transactionToast(signature)
+      accounts.refetch()
     },
-    onError: (error) => {
-      toast.error(`Error creating entry: ${error.message}`);
-    }
+    onError: (error: Error) => {
+      toast.error(`Error creating entry: ${error.message}`)
+    },
   })
 
-    const updateEntry = useMutation<string, Error, CreateEntryArgs> ({
-    mutationKey: [`journalEntry`, `update`, { cluster }],
-    mutationFn: async ({title, message}) => {
-      return program.methods.updateJournalEntry(title, message).rpc();
+  const updateEntry = useMutation<string, Error, CreateEntryArgs>({
+    mutationKey: ['journalEntry', 'update', { cluster }],
+    mutationFn: async ({ title, message }) => {
+      return program.methods.updateJournalEntry(title, message).rpc()
     },
-    onSuccess: (signature) {
-      transactionToast(signature);
-      accounts.refetch();
+    onSuccess: (signature) => {
+      transactionToast(signature)
+      accounts.refetch()
     },
-    onError: (error) => {
-      toast.error(`Error updating entry: ${error.message}`);
-    }
+    onError: (error: Error) => {
+      toast.error(`Error updating entry: ${error.message}`)
+    },
   })
 
-  const deleteEntry = useMutation({
-    mutationKey: [`journalEntry`, `delete`, { cluster }],
-    mutationFn: async ({title: string}) => {
-      return program.methods.deleteJournalEntry(title).rpc();
+  const deleteEntry = useMutation<string, Error, { title: string }>({
+    mutationKey: ['journalEntry', 'delete', { cluster }],
+    mutationFn: async ({ title }) => {
+      return program.methods.deleteJournalEntry(title).rpc()
     },
-    onSuccess: (signature) {
-      transactionToast(signature);
-      accounts.refetch();
+    onSuccess: (signature) => {
+      transactionToast(signature)
+      accounts.refetch()
+    },
+    onError: (error: Error) => {
+      toast.error(`Error deleting entry: ${error.message}`)
     },
   })
+
+  return {
+    program,
+    programId,
+    accounts,
+    getProgramAccount,
+    createEntry,
+    updateEntry,
+    deleteEntry,
+  }
+}
 
 export function useCrudProgramAccount({ account }: { account: PublicKey }) {
   const { cluster } = useCluster()
@@ -81,13 +104,16 @@ export function useCrudProgramAccount({ account }: { account: PublicKey }) {
 
   const accountQuery = useQuery({
     queryKey: ['journalEntry', 'fetch', { cluster, account }],
-    queryFn: () => program.account.journalEntryState.fetch(account),
+    queryFn: async () => {
+      return program.account.journalEntryState.fetch(account)
+    },
+    enabled: !!program && !!account,
   })
-  
 
   return {
     accountQuery,
-    updateEntry,
-    deleteEntry,
+    program,
+    accounts,
+    transactionToast,
   }
-}}
+}
