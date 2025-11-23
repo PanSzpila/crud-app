@@ -21,13 +21,9 @@ export function useCrudProgram() {
   const { cluster } = useCluster()
   const transactionToast = useTransactionToast()
   const provider = useAnchorProvider()
+  const programId = useMemo(() => getCrudProgramId(cluster.network as Cluster), [cluster])
 
-  const programId = useMemo(
-    () => getCrudProgramId(cluster.network as Cluster),
-    [cluster],
-  )
-
-  const program = useMemo(() => getCrudProgram(provider, programId), [provider, programId])
+  const program = getCrudProgram(provider)
 
   const accounts = useQuery({
     queryKey: ['journalEntry', 'all', { cluster }],
@@ -40,13 +36,16 @@ export function useCrudProgram() {
 
   const getProgramAccount = useQuery({
     queryKey: ['get-program-account', { cluster }],
-    queryFn: async () => connection.getParsedAccountInfo(programId),
-    enabled: !!connection && !!programId,
+    queryFn: () => connection.getParsedAccountInfo(programId),
   })
 
   const createEntry = useMutation<string, Error, CreateEntryArgs>({
     mutationKey: ['journalEntry', 'create', { cluster }],
-    mutationFn: async ({ title, message }) => {
+    mutationFn: async ({ title, message, owner }) => {
+      const [journalEntryAddress] = await PublicKey.findProgramAddress(
+        [Buffer.from(title), owner.toBuffer()],
+        programId,
+      )
       return program.methods.createJournalEntry(title, message).rpc()
     },
     onSuccess: (signature) => {
@@ -58,9 +57,33 @@ export function useCrudProgram() {
     },
   })
 
+  return {
+    program,
+    programId,
+    accounts,
+    getProgramAccount,
+    createEntry,
+  }
+}
+
+export function useCrudProgramAccount({ account }: { account: PublicKey }) {
+  const { cluster } = useCluster()
+  const transactionToast = useTransactionToast()
+  const { program, accounts } = useCrudProgram()
+  const programId = new PublicKey('4ABSuyEZT7W7fn5byRCVipJ1beECs2DWLquBpez7Msd7')
+
+  const accountQuery = useQuery({
+    queryKey: ['journalEntry', 'fetch', { cluster, account }],
+    queryFn: () => program.account.journalEntryState.fetch(account),
+  })
+
   const updateEntry = useMutation<string, Error, CreateEntryArgs>({
     mutationKey: ['journalEntry', 'update', { cluster }],
-    mutationFn: async ({ title, message }) => {
+    mutationFn: async ({ title, message, owner }) => {
+      const [journalEntryAddress] = await PublicKey.findProgramAddress(
+        [Buffer.from(title), owner.toBuffer()],
+        programId,
+      )
       return program.methods.updateJournalEntry(title, message).rpc()
     },
     onSuccess: (signature) => {
@@ -73,13 +96,11 @@ export function useCrudProgram() {
   })
 
   const deleteEntry = useMutation<string, Error, { title: string }>({
-    mutationKey: ['journalEntry', 'delete', { cluster }],
-    mutationFn: async ({ title }) => {
-      return program.methods.deleteJournalEntry(title).rpc()
-    },
-    onSuccess: (signature) => {
-      transactionToast(signature)
-      accounts.refetch()
+    mutationKey: ['journalEntry', 'deleteEntry', { cluster, account }],
+    mutationFn: ({ title: string }) => program.methods.deleteJournalEntry(title).rpc(),
+    onSuccess: (tx) => {
+      transactionToast(tx)
+      return accounts.refetch()
     },
     onError: (error: Error) => {
       toast.error(`Error deleting entry: ${error.message}`)
@@ -87,33 +108,8 @@ export function useCrudProgram() {
   })
 
   return {
-    program,
-    programId,
-    accounts,
-    getProgramAccount,
-    createEntry,
+    accountQuery,
     updateEntry,
     deleteEntry,
-  }
-}
-
-export function useCrudProgramAccount({ account }: { account: PublicKey }) {
-  const { cluster } = useCluster()
-  const transactionToast = useTransactionToast()
-  const { program, accounts } = useCrudProgram()
-
-  const accountQuery = useQuery({
-    queryKey: ['journalEntry', 'fetch', { cluster, account }],
-    queryFn: async () => {
-      return program.account.journalEntryState.fetch(account)
-    },
-    enabled: !!program && !!account,
-  })
-
-  return {
-    accountQuery,
-    program,
-    accounts,
-    transactionToast,
   }
 }
